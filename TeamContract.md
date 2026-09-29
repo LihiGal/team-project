@@ -19,16 +19,16 @@ This contract sets out shared expectations and commitments for how our team will
 ### Communication
 
 * Which platform will you use for communication outside of class, when required for work on your course project? 
-## We will be using Instagram group chat.
+-  We will be using Instagram group chat.
 
 * Each teammate agrees to respond to messages in at most how long? 
-## 1 day - if they need more time, communicate so.
+-  1 day - if they need more time, communicate so.
 
 * What things should a teammate notify you about? 
-## not making it to lab sessions, not making it to a deadline, any main branch commitments, someone wants to change someone else's part of the project
+-  not making it to lab sessions, not making it to a deadline, any main branch commitments, someone wants to change someone else's part of the project
 
 * Respectful and inclusive behaviour are necessary for smooth and productive communication. What are some respectful and inclusive behaviours you expect when communicating with each other during lectures, labs, or outside of class?
-## Actively listening to each team members ideas, giving everyone a chance to meaningfully contribute
+  Actively listening to each team members ideas, giving everyone a chance to meaningfully contribute
 
 ---
 
@@ -36,24 +36,27 @@ This contract sets out shared expectations and commitments for how our team will
 
 * Based on your previous teamwork experiences, what other behaviours do you agree upon as a team?
     - some examples of possible additional team norms and expectations are included in the sample team contract in case your team needs some help getting ideas for what else you want to include.
-    - ## 
+    - We do not have any 
 
 ---
 
 ## Decision Making
 
 * How will decisions about your team project be made? (Examples: By majority vote, by unanimous vote, etc.)
+- they will be made via majority vote
 
 ---
 ## Conflict resolution
 
 * How will your team resolve conflicts? (Example: by listening to each other's side of the issue and attempting to reach a compromise. By consulting a TA or instructor as a team, if a resolution has not yet been reached.)
+- listening to each others side of the issue, consulting with a TA, and arriving to a comprimise
 
 ---
 
 ## Accountability
 
 * Reliability and accountability are also important aspects of teamwork. What are the responsibilities of each team member? (Example: completing their share of the work in a timely manner, seeking assistance from teammates/TAs/instructors when required, etc.)
+* completing their share of the work 
 
 ---
 
@@ -63,4 +66,4 @@ By signing below, we acknowledge that we have read, discussed, and agreed to the
 
 Team Member Signatures:
 
-(type names here)
+Lihi Gal Ezer
