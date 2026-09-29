@@ -36,7 +36,11 @@ This contract sets out shared expectations and commitments for how our team will
 
 * Based on your previous teamwork experiences, what other behaviours do you agree upon as a team?
     - some examples of possible additional team norms and expectations are included in the sample team contract in case your team needs some help getting ideas for what else you want to include.
-    - We do not have any 
+    - Do not touch another member's code without communicating intent to do so
+    - If AI is used for coding, members should be able to explain and justify every line of generated code
+
+
+
 
 ---
 
@@ -50,6 +54,9 @@ This contract sets out shared expectations and commitments for how our team will
 
 * How will your team resolve conflicts? (Example: by listening to each other's side of the issue and attempting to reach a compromise. By consulting a TA or instructor as a team, if a resolution has not yet been reached.)
 - listening to each others side of the issue, consulting with a TA, and arriving to a comprimise
+- Both sides should list out the points of disagreement and other members can weigh in on their oppinions
+- If it is possible to compromise, do that :)
+
 
 ---
 
