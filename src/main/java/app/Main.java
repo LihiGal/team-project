@@ -13,13 +13,11 @@ import java.util.logging.Logger;
 
 /** Starts the game. All wiring lives in AppBuilder. */
 public class Main {
-    private static final String TEMPORARY_USERNAME = "__story3_demo__";
 
     public static void main(String[] args) {
         SqliteConnectionProvider connections = new SqliteConnectionProvider();
         try {
             new SchemaInitializer(connections).initialize();
-            createTemporaryProfile(connections);
         } catch (SQLException e) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, "Could not initialize the game database", e);
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null,
@@ -27,29 +25,23 @@ public class Main {
             return;
         }
         SwingUtilities.invokeLater(() -> {
-            JFrame application = new AppBuilder()
+            JFrame application = new AppBuilder(connections)
                     .addGameView()
                     .addDialogueView()
                     .addNewGameUseCase()
                     .addTalkToNpcUseCase()
-                    .addPersistenceUseCases(new SqliteGameDataAccessObject(connections),
-                            () -> TEMPORARY_USERNAME)
+                    .addLoginView()
+                    .addSignupView()
+                    .addLoginUseCase()
+                    .addSignupUseCase()
+                    .addLogoutUseCase()
+                    .addPersistenceUseCases(new SqliteGameDataAccessObject(connections))
+                    .addQuitGameUseCase()
                     .build();
-            application.setSize(480, 360);
+            application.setSize(700, 450);
+            application.setMinimumSize(new java.awt.Dimension(650, 400));
             application.setLocationRelativeTo(null);
             application.setVisible(true);
         });
-    }
-
-    /** Removed when Story 1 provides authenticated accounts. */
-    private static void createTemporaryProfile(SqliteConnectionProvider connections) throws SQLException {
-        try (var connection = connections.openConnection();
-             var statement = connection.prepareStatement("""
-                     INSERT INTO users (username, password_hash) VALUES (?, '')
-                     ON CONFLICT(username) DO NOTHING
-                     """)) {
-            statement.setString(1, TEMPORARY_USERNAME);
-            statement.executeUpdate();
-        }
     }
 }
