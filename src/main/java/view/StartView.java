@@ -1,49 +1,46 @@
 package view;
 
 import interface_adapter.new_game.NewGameController;
-import interface_adapter.logout.LogoutController;
+import interface_adapter.persistence.PersistenceController;
+import interface_adapter.persistence.PersistenceViewModel;
 
-import java.awt.GridBagConstraints;
+import java.awt.BorderLayout;
 import java.awt.GridBagLayout;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 
 /**
- * TEMPORARY first screen with a single New Game button, so Story 2 can be
- * demoed on its own. Story 1's TitleView replaces it and calls the same
- * NewGameController.
+ * Temporary first screen until Story 1's title screen is available.
  */
 public class StartView extends JPanel {
 
     public static final String VIEW_NAME = "start";
-
-    private LogoutController logoutController;
+    private final JButton newGameButton = new JButton("New Game");
+    private final JPanel actions = new JPanel();
 
     public StartView(NewGameController newGameController) {
-        setLayout(new GridBagLayout());
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.insets = new java.awt.Insets(10, 10, 10, 10);
-
-        JButton newGameButton = new JButton("New Game");
+        setLayout(new BorderLayout());
         newGameButton.addActionListener(e -> newGameController.execute());
-        add(newGameButton, gbc);
-
-        gbc.gridy = 1;
-
-        JButton logoutButton = new JButton("Logout");
-        logoutButton.addActionListener(e -> {
-            if (logoutController != null) {
-                logoutController.execute();
-            }
-        });
-        add(logoutButton, gbc);
+        actions.add(newGameButton);
+        JPanel center = new JPanel(new GridBagLayout());
+        center.add(actions);
+        add(center, BorderLayout.CENTER);
     }
 
-    public void setLogoutController(LogoutController logoutController) {
-        this.logoutController = logoutController;
+    public void addLoadGame(PersistenceController controller, PersistenceViewModel feedback) {
+        JButton loadButton = new JButton("Load Game");
+        loadButton.addActionListener(e -> controller.load());
+        actions.add(loadButton);
+        JLabel message = new JLabel(" ", SwingConstants.CENTER);
+        add(message, BorderLayout.SOUTH);
+        feedback.addPropertyChangeListener(event -> {
+            var state = feedback.getState();
+            newGameButton.setEnabled(!state.busy());
+            loadButton.setEnabled(!state.busy());
+            message.setText(state.message());
+        });
     }
 
     public String getViewName() {

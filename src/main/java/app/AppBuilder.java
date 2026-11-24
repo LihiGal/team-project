@@ -12,7 +12,8 @@ import use_case.signup.SignupInputBoundary;
 import use_case.signup.SignupInteractor;
 import use_case.signup.SignupOutputBoundary;
 import view.SignupView;
-import data_access.InMemoryUserDataAccessObject;
+import data_access.SqliteUserDataAccessObject;
+import data_access.SqliteConnectionProvider;
 import data_access.Pbkdf2PasswordHasher;
 import entity.UserSession;
 import interface_adapter.login.LoginController;
@@ -30,10 +31,17 @@ import interface_adapter.ViewManagerModel;
 import interface_adapter.hud.HudViewModel;
 import interface_adapter.new_game.NewGameController;
 import interface_adapter.new_game.NewGamePresenter;
+import interface_adapter.persistence.PersistenceController;
+import interface_adapter.persistence.PersistencePresenter;
+import interface_adapter.persistence.PersistenceViewModel;
 import interface_adapter.talk_to_npc.DialogueViewModel;
 import interface_adapter.talk_to_npc.TalkToNpcController;
 import interface_adapter.talk_to_npc.TalkToNpcPresenter;
 import use_case.GameStateDataAccessInterface;
+import use_case.ManageSavesInteractor;
+import use_case.SaveGameDataAccessInterface;
+import use_case.load_game.LoadGameInteractor;
+import use_case.save_game.SaveGameInteractor;
 import use_case.new_game.NewGameInputBoundary;
 import use_case.new_game.NewGameInteractor;
 import use_case.new_game.NewGameOutputBoundary;
@@ -44,6 +52,7 @@ import use_case.talk_to_npc.TalkToNpcOutputBoundary;
 import view.DialogueView;
 import view.GameView;
 import view.TitleView;
+import view.SavedGamesDialog;
 import view.ViewManager;
 
 import java.awt.CardLayout;
@@ -72,7 +81,7 @@ public class AppBuilder {
     private HudViewModel hudViewModel;
     private GameView gameView;
     private TitleView titleView;
-    private final UserDataAccessInterface userDataAccessObject = new InMemoryUserDataAccessObject();
+    private final UserDataAccessInterface userDataAccessObject;
     private final PasswordHasher passwordHasher = new Pbkdf2PasswordHasher();
     private final UserSession userSession = new UserSession();
     private LoginViewModel loginViewModel;
@@ -82,7 +91,9 @@ public class AppBuilder {
     private DialogueViewModel dialogueViewModel;
     private DialogueView dialogueView;
 
-    public AppBuilder() {
+    public AppBuilder(SqliteConnectionProvider connections) {
+        userDataAccessObject = new SqliteUserDataAccessObject(connections);
+
         cardPanel.setLayout(cardLayout);
         viewManager = new ViewManager(cardPanel, cardLayout, viewManagerModel);
     }
@@ -204,6 +215,20 @@ public class AppBuilder {
 
         titleView.setLogoutController(logoutController);
 
+        return this;
+    }
+    /** Requires addGameView() and addNewGameUseCase(). */
+    public AppBuilder addPersistenceUseCases(SaveGameDataAccessInterface saves) {
+        PersistenceViewModel feedback = new PersistenceViewModel();
+        PersistencePresenter presenter = new PersistencePresenter(
+                feedback, hudViewModel, viewManagerModel, gameView.getViewName());
+        PersistenceController controller = new PersistenceController(
+                new SaveGameInteractor(gameStateDataAccessObject, saves, presenter),
+                new LoadGameInteractor(gameStateDataAccessObject, saves, presenter),
+                new ManageSavesInteractor(saves, presenter), userSession::getCurrentUsername, feedback);
+        new SavedGamesDialog(cardPanel, controller, feedback);
+        titleView.addLoadGame(controller, feedback);
+        gameView.addSaveGame(controller, feedback);
         return this;
     }
 

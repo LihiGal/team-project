@@ -2,6 +2,8 @@ package view;
 
 import interface_adapter.new_game.NewGameController;
 import interface_adapter.logout.LogoutController;
+import interface_adapter.persistence.PersistenceController;
+import interface_adapter.persistence.PersistenceViewModel;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -16,6 +18,10 @@ public class TitleView extends JPanel {
 
     private LogoutController logoutController;
 
+    private final JButton newGameButton = new JButton("New Game");
+    private final JButton loadGameButton = new JButton("Load Game");
+    private final JLabel message = new JLabel(" ");
+
     public TitleView(NewGameController newGameController) {
         setLayout(new GridBagLayout());
 
@@ -28,14 +34,12 @@ public class TitleView extends JPanel {
         add(titleLabel, gbc);
 
         gbc.gridy = 1;
-        JButton newGameButton = new JButton("New Game");
         newGameButton.addActionListener(
                 e -> newGameController.execute()
         );
         add(newGameButton, gbc);
 
         gbc.gridy = 2;
-        JButton loadGameButton = new JButton("Load Game");
         loadGameButton.setEnabled(false);
         loadGameButton.setToolTipText(
                 "Available after Story 3 integration"
@@ -50,6 +54,23 @@ public class TitleView extends JPanel {
             }
         });
         add(logoutButton, gbc);
+
+        gbc.gridy = 4;
+        add(message, gbc);
+    }
+
+    public void addLoadGame(PersistenceController controller, PersistenceViewModel feedback){
+        loadGameButton.setEnabled(true);
+        loadGameButton.setToolTipText(null);
+
+        loadGameButton.addActionListener(e -> controller.load());
+
+        feedback.addPropertyChangeListener(event -> {
+            var state = feedback.getState();
+            newGameButton.setEnabled(!state.busy());
+            loadGameButton.setEnabled(!state.busy());
+            message.setText(state.message());
+        });
     }
 
     public void setLogoutController(
