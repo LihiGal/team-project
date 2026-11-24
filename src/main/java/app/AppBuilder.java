@@ -2,6 +2,9 @@ package app;
 
 import interface_adapter.logout.LogoutController;
 import interface_adapter.logout.LogoutPresenter;
+import interface_adapter.quit_game.QuitGameController;
+import interface_adapter.quit_game.QuitGamePresenter;
+import use_case.quit_game.QuitGameInteractor;
 import use_case.logout.LogoutInputBoundary;
 import use_case.logout.LogoutInteractor;
 import use_case.logout.LogoutOutputBoundary;
@@ -208,7 +211,8 @@ public class AppBuilder {
         LogoutInputBoundary interactor =
                 new LogoutInteractor(
                         presenter,
-                        userSession
+                        userSession,
+                        gameStateDataAccessObject
                 );
 
         logoutController = new LogoutController(interactor);
@@ -217,6 +221,25 @@ public class AppBuilder {
 
         return this;
     }
+
+    public AppBuilder addQuitGameUseCase() {
+        QuitGamePresenter presenter = new QuitGamePresenter(
+                viewManagerModel,
+                titleView.getViewName()
+        );
+
+        QuitGameInteractor interactor = new QuitGameInteractor(
+                gameStateDataAccessObject,
+                presenter
+        );
+
+        QuitGameController controller = new QuitGameController(interactor);
+
+        gameView.addQuitGame(controller);
+
+        return this;
+    }
+
     /** Requires addGameView() and addNewGameUseCase(). */
     public AppBuilder addPersistenceUseCases(SaveGameDataAccessInterface saves) {
         PersistenceViewModel feedback = new PersistenceViewModel();

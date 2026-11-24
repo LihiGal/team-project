@@ -4,6 +4,7 @@ import interface_adapter.hud.HudViewModel;
 import interface_adapter.persistence.PersistenceController;
 import interface_adapter.persistence.PersistenceViewModel;
 import interface_adapter.talk_to_npc.TalkToNpcController;
+import interface_adapter.quit_game.QuitGameController;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -13,6 +14,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.JOptionPane;
 
 /**
  * The main in-game screen. It shows the stats panel on top and, since
@@ -34,6 +36,7 @@ public class GameView extends JPanel {
     private final JPanel footer = new JPanel(new BorderLayout());
     private final JPanel actionPanel = new JPanel(new FlowLayout());
     private final JButton talkButton = new JButton("Talk to the Shawarma Lady");
+    private final JButton quitButton = new JButton("Quit Game");
 
     public GameView(HudViewModel hudViewModel) {
         setLayout(new BorderLayout());
@@ -70,6 +73,7 @@ public class GameView extends JPanel {
             talkButton.setEnabled(!state.busy());
             saveButton.setEnabled(!state.busy());
             loadButton.setEnabled(!state.busy());
+            quitButton.setEnabled(!state.busy());
             message.setText(state.message());
         });
     }
@@ -77,6 +81,24 @@ public class GameView extends JPanel {
     /** Given by AppBuilder once the talk use case has been built. */
     public void setTalkToNpcController(TalkToNpcController talkToNpcController) {
         this.talkToNpcController = talkToNpcController;
+    }
+
+    public void addQuitGame(QuitGameController controller) {
+        quitButton.addActionListener(e -> {
+            int choice = JOptionPane.showConfirmDialog(
+                    this,
+                    "Are you sure you want to quit? Unsaved progress will be lost.",
+                    "Quit Game",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+
+            if (choice == JOptionPane.YES_OPTION) {
+                controller.execute();
+            }
+        });
+
+        actionPanel.add(quitButton);
     }
 
     public String getViewName() {

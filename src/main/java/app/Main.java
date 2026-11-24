@@ -36,8 +36,10 @@ public class Main {
                     .addSignupUseCase()
                     .addLogoutUseCase()
                     .addPersistenceUseCases(new SqliteGameDataAccessObject(connections))
+                    .addQuitGameUseCase()
                     .build();
-            application.setSize(480, 360);
+            application.setSize(700, 450);
+            application.setMinimumSize(new java.awt.Dimension(650, 400));
             application.setLocationRelativeTo(null);
             application.setVisible(true);
         });
