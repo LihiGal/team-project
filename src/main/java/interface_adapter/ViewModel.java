@@ -42,6 +42,10 @@ public class ViewModel<T> {
         support.firePropertyChange(propertyName, null, state);
     }
 
+    public void firePropertyChanged(String propertyName, Object value){
+        support.firePropertyChange(propertyName, null, value);
+    }
+
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         support.addPropertyChangeListener(listener);
     }

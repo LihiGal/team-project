@@ -46,6 +46,8 @@ public final class SchemaInitializer {
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS runs_by_username ON runs(username)");
             addSaveColumn(statement, "save_name", "TEXT NOT NULL DEFAULT ''");
             addSaveColumn(statement, "saved_at", "INTEGER");
+            addSaveColumn(statement, "remaining_time_blocks",
+                    "INTEGER NOT NULL DEFAULT 3 CHECK (remaining_time_blocks BETWEEN 0 AND 3)");
             connection.commit();
         }
     }

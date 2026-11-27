@@ -1,8 +1,11 @@
 package interface_adapter.talk_to_npc;
 
+import entity.GameStatus;
 import interface_adapter.ViewManagerModel;
 import interface_adapter.hud.HudState;
 import interface_adapter.hud.HudViewModel;
+import interface_adapter.result.ResultState;
+import interface_adapter.result.ResultViewModel;
 import use_case.talk_to_npc.ChooseOptionOutputData;
 import use_case.talk_to_npc.StartTalkOutputData;
 import use_case.talk_to_npc.TalkToNpcOutputBoundary;
@@ -21,17 +24,19 @@ public class TalkToNpcPresenter implements TalkToNpcOutputBoundary {
     private final HudViewModel hudViewModel;
     private final ViewManagerModel viewManagerModel;
     private final String gameViewName;
+    private final ResultViewModel resultViewModel;
 
     /**
      * @param gameViewName the card name of the game screen, passed in by
      *                     AppBuilder so this presenter does not depend on the view layer
      */
     public TalkToNpcPresenter(DialogueViewModel dialogueViewModel, HudViewModel hudViewModel,
-                              ViewManagerModel viewManagerModel, String gameViewName) {
+                              ViewManagerModel viewManagerModel, String gameViewName, ResultViewModel resultViewModel) {
         this.dialogueViewModel = dialogueViewModel;
         this.hudViewModel = hudViewModel;
         this.viewManagerModel = viewManagerModel;
         this.gameViewName = gameViewName;
+        this.resultViewModel = resultViewModel;
     }
 
     @Override
@@ -54,10 +59,10 @@ public class TalkToNpcPresenter implements TalkToNpcOutputBoundary {
 
     @Override
     public void prepareResultView(ChooseOptionOutputData outputData) {
-        // The stats changed, so the stats panel has to be told. We copy
-        // the current HUD state so the day stays the same and only the
-        // four stats are replaced.
+        // Update the HUD with the latest game state after the response.
         HudState hudState = new HudState(hudViewModel.getState());
+        hudState.setDay(outputData.getDay());
+        hudState.setRemainingTimeBlocks(outputData.getRemainingTimeBlocks());
         hudState.setEnergy(outputData.getEnergy());
         hudState.setSanity(outputData.getSanity());
         hudState.setAcademicSurvival(outputData.getAcademicSurvival());
@@ -65,11 +70,28 @@ public class TalkToNpcPresenter implements TalkToNpcOutputBoundary {
         hudViewModel.setState(hudState);
         hudViewModel.firePropertyChanged();
 
-        String message = outputData.getMessage();
         if (outputData.isGameOver()) {
-            message = message + "\n\n" + GAME_OVER_TEXT;
+            ResultState resultState = new ResultState();
+
+            boolean won = outputData.getStatus() == GameStatus.WON;
+            resultState.setWon(won);
+
+            if (won){
+                resultState.setMessage("You survived the week at UofT!");
+            }else if (outputData.getEnergy() == 0 || outputData.getSanity() == 0 || outputData.getAcademicSurvival() == 0){
+               resultState.setMessage(GAME_OVER_TEXT);
+            }else{
+                resultState.setMessage("Your Academic Survival is below 60.");
+            }
+
+            resultViewModel.setState(resultState);
+            resultViewModel.firePropertyChanged();
+            viewManagerModel.setState(resultViewModel.getViewName());
+            viewManagerModel.firePropertyChanged();
+            return;
         }
 
+        String message = outputData.getMessage();
         DialogueState state = dialogueViewModel.getState();
         state.setFinished(true);
         state.setResultMessage(message);
@@ -78,6 +100,11 @@ public class TalkToNpcPresenter implements TalkToNpcOutputBoundary {
 
     @Override
     public void prepareFailView(String errorMessage) {
+        if (errorMessage.startsWith("Autosave failed.")) {
+            hudViewModel.firePropertyChanged("error", errorMessage);
+            return;
+        }
+
         DialogueState state = dialogueViewModel.getState();
         state.setErrorMessage(errorMessage);
         dialogueViewModel.firePropertyChanged(DialogueViewModel.ERROR_PROPERTY);

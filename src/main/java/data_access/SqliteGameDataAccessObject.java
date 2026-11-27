@@ -71,13 +71,13 @@ public final class SqliteGameDataAccessObject implements SaveGameDataAccessInter
         try (var statement = connection.prepareStatement("""
                 INSERT INTO game_saves
                     (run_id, day, energy, sanity, academic_survival, money, current_location_id,
-                     saved_order, save_name, saved_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(saved_order), 0) + 1 FROM game_saves), ?, ?)
+                     saved_order, save_name, saved_at, remaining_time_blocks)
+                VALUES (?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(saved_order), 0) + 1 FROM game_saves), ?, ?, ?)
                 ON CONFLICT(run_id) DO UPDATE SET
                     day = excluded.day, energy = excluded.energy, sanity = excluded.sanity,
                     academic_survival = excluded.academic_survival, money = excluded.money,
                     current_location_id = excluded.current_location_id, saved_order = excluded.saved_order,
-                    saved_at = excluded.saved_at
+                    saved_at = excluded.saved_at, remaining_time_blocks = excluded.remaining_time_blocks
                 """)) {
             Player player = game.getPlayer();
             statement.setString(1, game.getRunId().toString());
@@ -89,6 +89,7 @@ public final class SqliteGameDataAccessObject implements SaveGameDataAccessInter
             statement.setString(7, game.getCurrentLocationId());
             statement.setString(8, name.isBlank() ? SavedGameSummary.defaultName(game.getRunId()) : name);
             statement.setLong(9, System.currentTimeMillis());
+            statement.setInt(10, game.getRemainingTimeBlocks());
             statement.executeUpdate();
         }
     }
@@ -119,7 +120,7 @@ public final class SqliteGameDataAccessObject implements SaveGameDataAccessInter
                         row.getInt("academic_survival"), row.getInt("money"));
                 return Optional.of(new GameState(UUID.fromString(row.getString("run_id")),
                         row.getInt("day"), player, row.getString("current_location_id"),
-                        GameStatus.valueOf(row.getString("status"))));
+                        GameStatus.valueOf(row.getString("status")), row.getInt("remaining_time_blocks")));
             }
         } catch (SQLException | IllegalArgumentException e) {
             throw new GamePersistenceException("Could not read the saved game", e);

@@ -36,6 +36,7 @@ public class NewGamePresenter implements NewGameOutputBoundary {
         state.setSanity(outputData.getSanity());
         state.setAcademicSurvival(outputData.getAcademicSurvival());
         state.setMoney(outputData.getMoney());
+        state.setRemainingTimeBlocks(outputData.getRemainingTimeBlocks());
         hudViewModel.setState(state);
         hudViewModel.firePropertyChanged();
 

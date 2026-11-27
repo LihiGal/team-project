@@ -11,9 +11,15 @@ import entity.StatEffects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import use_case.GameStateDataAccessInterface;
+import use_case.AutoSave;
+import use_case.SaveGameDataAccessInterface;
+import use_case.GamePersistenceException;
+import use_case.SavedGameSummary;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,6 +44,40 @@ class TalkToNpcInteractorTest {
         @Override
         public GameState getGameState() {
             return gameState;
+        }
+    }
+
+    private static class FakeSaveDao implements SaveGameDataAccessInterface {
+
+        private GameState savedGame;
+        private String savedUsername;
+        private int saveCount;
+
+        @Override
+        public void save(String username, GameState game, String name) throws GamePersistenceException {
+            savedUsername = username;
+            savedGame = game;
+            saveCount++;
+        }
+
+        @Override
+        public Optional<GameState> loadLatest(String username) {
+            return Optional.ofNullable(savedGame);
+        }
+
+        @Override
+        public Optional<GameState> load(String username, UUID runId) {
+            return Optional.ofNullable(savedGame);
+        }
+
+        @Override
+        public List<SavedGameSummary> list(String username) {
+            return List.of();
+        }
+
+        @Override
+        public boolean delete(String username, UUID runId) {
+            return false;
         }
     }
 
@@ -89,6 +129,7 @@ class TalkToNpcInteractorTest {
     private FakeGameStateDataAccess gameStateDataAccess;
     private FakePresenter presenter;
     private TalkToNpcInteractor interactor;
+    private FakeSaveDao saveDao;
 
     /**
      * Every test starts with a new game and a vendor who has one greeting
@@ -99,10 +140,12 @@ class TalkToNpcInteractorTest {
     void setUp() {
         Outcome niceOutcome = new Outcome.Builder()
                 .effects(new StatEffects(-5, 10, 0, 0))
+                .timeBlocksUsed(1)
                 .message("She smiles.")
                 .build();
         Outcome rudeOutcome = new Outcome.Builder()
                 .effects(new StatEffects(0, -10, 0, 0))
+                .timeBlocksUsed(1)
                 .message("She glares.")
                 .build();
 
@@ -117,8 +160,11 @@ class TalkToNpcInteractorTest {
         gameStateDataAccess = new FakeGameStateDataAccess();
         gameStateDataAccess.gameState = GameState.startNew();
         presenter = new FakePresenter();
+        saveDao = new FakeSaveDao();
+        AutoSave autoSave = new AutoSave(saveDao, () -> "testUser");
+
         interactor = new TalkToNpcInteractor(
-                gameStateDataAccess, new FakeDialogueDataAccess(vendor), presenter);
+                gameStateDataAccess, new FakeDialogueDataAccess(vendor), presenter, autoSave);
     }
 
     // ---------- start ----------
@@ -301,5 +347,110 @@ class TalkToNpcInteractorTest {
         interactor.leave();
 
         assertTrue(presenter.wentBackToGame);
+    }
+
+    @Test
+    void autosaveOccursOnlyWhenDayEnds() {
+        ChooseOptionInputData input =
+                new ChooseOptionInputData("vendor", "greeting", "be_nice");
+
+        interactor.choose(input);
+        assertEquals(0, saveDao.saveCount);
+
+        interactor.choose(input);
+        assertEquals(0, saveDao.saveCount);
+
+        interactor.choose(input);
+        assertEquals(1, saveDao.saveCount);
+
+        assertEquals("testUser", saveDao.savedUsername);
+        assertNotNull(saveDao.savedGame);
+        assertEquals(2, saveDao.savedGame.getDay());
+        assertEquals(3, saveDao.savedGame.getRemainingTimeBlocks());
+        assertNull(presenter.errorMessage);
+    }
+
+    @Test
+    void autosaveStoresWinningGame() {
+        gameStateDataAccess.gameState =
+                new GameState(7, new Player(100, 100, 60, 50), "residence");
+
+        ChooseOptionInputData input =
+                new ChooseOptionInputData("vendor", "greeting", "be_nice");
+
+        interactor.choose(input);
+        interactor.choose(input);
+        interactor.choose(input);
+
+        assertEquals(1, saveDao.saveCount);
+        assertEquals(GameStatus.WON, saveDao.savedGame.getStatus());
+        assertTrue(presenter.resultData.isGameOver());
+    }
+
+    @Test
+    void autosaveStoresLosingGame() {
+        gameStateDataAccess.gameState =
+                new GameState(7, new Player(100, 100, 59, 50), "residence");
+
+        ChooseOptionInputData input =
+                new ChooseOptionInputData("vendor", "greeting", "be_nice");
+
+        interactor.choose(input);
+        interactor.choose(input);
+        interactor.choose(input);
+
+        assertEquals(1, saveDao.saveCount);
+        assertEquals(GameStatus.LOST, saveDao.savedGame.getStatus());
+        assertTrue(presenter.resultData.isGameOver());
+    }
+
+    @Test
+    void immediateLossDoesNotTriggerDayEndAutosave() {
+        gameStateDataAccess.gameState =
+                new GameState(1, new Player(5, 100, 50, 50), "residence");
+
+        interactor.choose(
+                new ChooseOptionInputData("vendor", "greeting", "be_nice"));
+
+        assertEquals(0, saveDao.saveCount);
+        assertEquals(GameStatus.LOST,
+                gameStateDataAccess.getGameState().getStatus());
+        assertTrue(presenter.resultData.isGameOver());
+    }
+
+    @Test
+    void autosaveFailureDoesNotPreventDayTransition() {
+        FakeSaveDao failingSaveDao = new FakeSaveDao() {
+            @Override
+            public void save(String username, GameState game, String name) throws GamePersistenceException {
+                throw new GamePersistenceException("Test save failure", new RuntimeException("Simulated failure"));
+            }
+        };
+
+        Outcome outcome = new Outcome.Builder()
+                .timeBlocksUsed(1)
+                .build();
+
+        DialogueOption option = new DialogueOption("be_nice", "Be nice", outcome);
+        DialogueNode node = new DialogueNode("greeting", "Hello", List.of(option));
+        NPC vendor = new NPC("vendor", "Vendor", "greeting", List.of(node));
+        AutoSave autoSave = new AutoSave(failingSaveDao, () -> "testUser");
+
+        interactor = new TalkToNpcInteractor(gameStateDataAccess,
+                new FakeDialogueDataAccess(vendor), presenter, autoSave);
+
+        ChooseOptionInputData input = new ChooseOptionInputData("vendor", "greeting", "be_nice");
+
+        interactor.choose(input);
+        interactor.choose(input);
+        interactor.choose(input);
+
+        assertEquals(2, gameStateDataAccess.getGameState().getDay());
+        assertEquals(3, gameStateDataAccess.getGameState()
+                .getRemainingTimeBlocks());
+
+        assertNotNull(presenter.resultData);
+        assertEquals("Autosave failed. Please save manually.",
+                presenter.errorMessage);
     }
 }

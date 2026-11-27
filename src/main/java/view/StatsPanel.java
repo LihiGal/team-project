@@ -27,6 +27,7 @@ public class StatsPanel extends JPanel implements PropertyChangeListener {
     private final JProgressBar sanityBar = createBar();
     private final JProgressBar academicBar = createBar();
     private final JLabel moneyLabel = new JLabel();
+    private final JLabel timeBlocksLabel = new JLabel();
 
     public StatsPanel(HudViewModel hudViewModel) {
         setLayout(new GridLayout(0, 2, 8, 4));
@@ -42,6 +43,8 @@ public class StatsPanel extends JPanel implements PropertyChangeListener {
         add(academicBar);
         add(new JLabel("Money"));
         add(moneyLabel);
+        add(new JLabel("Time Blocks"));
+        add(timeBlocksLabel);
 
         hudViewModel.addPropertyChangeListener(this);
         show(hudViewModel.getState());
@@ -49,11 +52,16 @@ public class StatsPanel extends JPanel implements PropertyChangeListener {
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        show((HudState) evt.getNewValue());
+        if (evt.getNewValue() instanceof HudState state){
+            show (state);
+        }
     }
 
     private void show(HudState state) {
         dayLabel.setText("Day " + state.getDay() + " of " + state.getTotalDays());
+
+        timeBlocksLabel.setText(state.getRemainingTimeBlocks() + " / 3");
+
         setBar(energyBar, state.getEnergy());
         setBar(sanityBar, state.getSanity());
         setBar(academicBar, state.getAcademicSurvival());

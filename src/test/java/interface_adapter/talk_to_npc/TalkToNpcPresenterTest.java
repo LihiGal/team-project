@@ -1,5 +1,6 @@
 package interface_adapter.talk_to_npc;
 
+import interface_adapter.result.ResultViewModel;
 import interface_adapter.ViewManagerModel;
 import interface_adapter.hud.HudState;
 import interface_adapter.hud.HudViewModel;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import use_case.talk_to_npc.ChooseOptionOutputData;
 import use_case.talk_to_npc.StartTalkOutputData;
+import entity.GameStatus;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -35,6 +37,7 @@ class TalkToNpcPresenterTest {
     private RecordingListener dialogueListener;
     private RecordingListener hudListener;
     private TalkToNpcPresenter presenter;
+    private ResultViewModel resultViewModel;
 
     @BeforeEach
     void setUp() {
@@ -46,8 +49,9 @@ class TalkToNpcPresenterTest {
         dialogueViewModel.addPropertyChangeListener(dialogueListener);
         hudListener = new RecordingListener();
         hudViewModel.addPropertyChangeListener(hudListener);
+        resultViewModel = new ResultViewModel();
 
-        presenter = new TalkToNpcPresenter(dialogueViewModel, hudViewModel, viewManagerModel, "game");
+        presenter = new TalkToNpcPresenter(dialogueViewModel, hudViewModel, viewManagerModel, "game", resultViewModel);
     }
 
     /** A greeting from a vendor with two responses. */
@@ -84,7 +88,8 @@ class TalkToNpcPresenterTest {
     @Test
     void startingASecondConversationClearsTheOldResult() {
         presenter.prepareDialogueView(makeStartData());
-        presenter.prepareResultView(new ChooseOptionOutputData("She smiles.", 95, 100, 50, 50, false));
+        presenter.prepareResultView(new ChooseOptionOutputData("She smiles.", 95, 100, 50, 50,
+                1, 2, "residence", GameStatus.IN_PROGRESS));
 
         presenter.prepareDialogueView(makeStartData());
 
@@ -105,7 +110,8 @@ class TalkToNpcPresenterTest {
         hudViewModel.setState(before);
         presenter.prepareDialogueView(makeStartData());
 
-        presenter.prepareResultView(new ChooseOptionOutputData("She glares.", 100, 90, 50, 50, false));
+        presenter.prepareResultView(new ChooseOptionOutputData("She glares.", 100, 90, 50, 50,
+                1, 2, "residence", GameStatus.IN_PROGRESS));
 
         DialogueState state = dialogueViewModel.getState();
         assertTrue(state.isFinished());
@@ -120,26 +126,27 @@ class TalkToNpcPresenterTest {
         assertEquals(1, after.getDay());
         assertEquals(7, after.getTotalDays());
         assertEquals(1, hudListener.propertyNames.size());
+        assertEquals(2, after.getRemainingTimeBlocks());
     }
 
     @Test
     void resultViewStaysOnTheDialogueScreen() {
         presenter.prepareDialogueView(makeStartData());
 
-        presenter.prepareResultView(new ChooseOptionOutputData("She glares.", 100, 90, 50, 50, false));
+        presenter.prepareResultView(new ChooseOptionOutputData("She glares.", 100, 90, 50, 50,
+                1, 2, "residence", GameStatus.IN_PROGRESS));
 
         assertEquals("dialogue", viewManagerModel.getState());
     }
 
     @Test
-    void resultViewAddsTheGameOverTextWhenThePlayerLost() {
-        presenter.prepareDialogueView(makeStartData());
+    void resultViewSwitchesToLoseScreenWhenPlayerLost() {
+        presenter.prepareResultView(new ChooseOptionOutputData("She glares.", 100, 0, 50, 50,
+                1, 3, "residence", GameStatus.LOST));
 
-        presenter.prepareResultView(new ChooseOptionOutputData("She glares.", 100, 0, 50, 50, true));
-
-        String message = dialogueViewModel.getState().getResultMessage();
-        assertTrue(message.startsWith("She glares."));
-        assertTrue(message.contains(TalkToNpcPresenter.GAME_OVER_TEXT));
+        assertFalse(resultViewModel.getState().isWon());
+        assertEquals(TalkToNpcPresenter.GAME_OVER_TEXT, resultViewModel.getState().getMessage());
+        assertEquals(resultViewModel.getViewName(), viewManagerModel.getState());
     }
 
     @Test
@@ -160,5 +167,48 @@ class TalkToNpcPresenterTest {
         presenter.prepareGameView();
 
         assertEquals("game", viewManagerModel.getState());
+    }
+
+    @Test
+    void resultViewUpdatesHudWhenDayAutomaticallyAdvances(){
+        HudState before = new HudState();
+        before.setDay(1);
+        before.setTotalDays(7);
+        before.setRemainingTimeBlocks(1);
+        before.setEnergy(50);
+        hudViewModel.setState(before);
+
+        presenter.prepareDialogueView(makeStartData());
+
+        presenter.prepareResultView(new ChooseOptionOutputData("She smiles.", 70, 100, 50, 50,
+                2, 3, "residence", GameStatus.IN_PROGRESS));
+
+        HudState after = hudViewModel.getState();
+
+        assertEquals(2, after.getDay());
+        assertEquals(7, after.getTotalDays());
+        assertEquals(3, after.getRemainingTimeBlocks());
+        assertEquals(70, after.getEnergy());
+        assertEquals(1, hudListener.propertyNames.size());
+    }
+
+    @Test
+    void resultViewSwitchesToWinScreenWhenPlayerWon(){
+        presenter.prepareResultView(new ChooseOptionOutputData("She smiles.", 80, 90, 60, 50,
+                7, 0, "residence", GameStatus.WON));
+
+        assertTrue(resultViewModel.getState().isWon());
+        assertEquals("You survived the week at UofT!", resultViewModel.getState().getMessage());
+        assertEquals(resultViewModel.getViewName(), viewManagerModel.getState());
+    }
+
+    @Test
+    void resultViewScreenSwitchesToLoseScreenWhenAcademicSurvivalIsBelowSixty(){
+        presenter.prepareResultView(new ChooseOptionOutputData("She smiles.", 80, 90, 59, 50,
+                7, 0, "residence", GameStatus.LOST));
+
+        assertFalse(resultViewModel.getState().isWon());
+        assertEquals("Your Academic Survival is below 60.", resultViewModel.getState().getMessage());
+        assertEquals(resultViewModel.getViewName(), viewManagerModel.getState());
     }
 }

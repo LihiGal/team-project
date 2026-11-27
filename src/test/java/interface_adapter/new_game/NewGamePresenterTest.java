@@ -21,7 +21,7 @@ class NewGamePresenterTest {
         hudViewModel.addPropertyChangeListener(evt -> hudEvents.add(evt.getNewValue()));
 
         NewGamePresenter presenter = new NewGamePresenter(hudViewModel, viewManagerModel, "game");
-        presenter.prepareSuccessView(new NewGameOutputData(1, 7, 100, 100, 50, 50));
+        presenter.prepareSuccessView(new NewGameOutputData(1, 7, 100, 100, 50, 50, 3));
 
         HudState state = hudViewModel.getState();
         assertEquals(1, state.getDay());
@@ -32,5 +32,6 @@ class NewGamePresenterTest {
         assertEquals(50, state.getMoney());
         assertEquals(1, hudEvents.size());
         assertEquals("game", viewManagerModel.getState());
+        assertEquals(3, state.getRemainingTimeBlocks());
     }
 }
