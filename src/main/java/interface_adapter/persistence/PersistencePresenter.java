@@ -1,8 +1,11 @@
 package interface_adapter.persistence;
 
+import entity.GameStatus;
 import interface_adapter.ViewManagerModel;
 import interface_adapter.hud.HudState;
 import interface_adapter.hud.HudViewModel;
+import interface_adapter.result.ResultState;
+import interface_adapter.result.ResultViewModel;
 import use_case.ManageSavesInteractor;
 import use_case.SavedGameSummary;
 import use_case.load_game.LoadGameOutputBoundary;
@@ -18,13 +21,15 @@ public final class PersistencePresenter implements SaveGameOutputBoundary, LoadG
     private final HudViewModel hud;
     private final ViewManagerModel views;
     private final String gameViewName;
+    private final ResultViewModel resultViewModel;
 
     public PersistencePresenter(PersistenceViewModel feedback, HudViewModel hud,
-                                ViewManagerModel views, String gameViewName) {
+                                ViewManagerModel views, String gameViewName, ResultViewModel resultViewModel) {
         this.feedback = feedback;
         this.hud = hud;
         this.views = views;
         this.gameViewName = gameViewName;
+        this.resultViewModel = resultViewModel;
     }
 
     @Override
@@ -59,9 +64,29 @@ public final class PersistencePresenter implements SaveGameOutputBoundary, LoadG
             state.setSanity(output.sanity());
             state.setAcademicSurvival(output.academicSurvival());
             state.setMoney(output.money());
+            state.setRemainingTimeBlocks(output.remainingTimeBlocks());
             hud.setState(state);
             hud.firePropertyChanged();
-            views.setState(gameViewName);
+
+            if (output.status() == GameStatus.IN_PROGRESS) {
+                views.setState(gameViewName);
+            } else {
+                ResultState resultState = new ResultState();
+
+                boolean won = output.status() == GameStatus.WON;
+                resultState.setWon(won);
+
+                if (won) {
+                    resultState.setMessage("You survived the week at UofT!");
+                } else if (output.energy() == 0 || output.sanity() == 0 || output.academicSurvival() == 0){
+                    resultState.setMessage("One of your stats has reached 0.");
+                } else {
+                    resultState.setMessage("Your Academic Survival is below 60");
+                }
+                resultViewModel.setState(resultState);
+                resultViewModel.firePropertyChanged();
+                views.setState(resultViewModel.getViewName());
+            }
             views.firePropertyChanged();
             updateMessage("Game loaded.");
             feedback.firePropertyChanged(PersistenceViewModel.GAME_LOADED);

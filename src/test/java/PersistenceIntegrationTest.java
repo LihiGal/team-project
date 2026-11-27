@@ -11,6 +11,7 @@ import interface_adapter.new_game.NewGamePresenter;
 import interface_adapter.persistence.PersistenceController;
 import interface_adapter.persistence.PersistencePresenter;
 import interface_adapter.persistence.PersistenceViewModel;
+import interface_adapter.result.ResultViewModel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import use_case.ManageSavesInteractor;
@@ -49,7 +50,7 @@ class PersistenceIntegrationTest {
         var feedback = new PersistenceViewModel();
         var hud = new HudViewModel();
         var views = new ViewManagerModel();
-        var presenter = new PersistencePresenter(feedback, hud, views, GameView.VIEW_NAME);
+        var presenter = new PersistencePresenter(feedback, hud, views, GameView.VIEW_NAME, new ResultViewModel());
         var controller = new PersistenceController(new SaveGameInteractor(active, saves, presenter),
                 new LoadGameInteractor(active, saves, presenter),
                 new ManageSavesInteractor(saves, presenter), () -> "alice", feedback);

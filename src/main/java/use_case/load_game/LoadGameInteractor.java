@@ -43,7 +43,7 @@ public final class LoadGameInteractor implements LoadGameInputBoundary {
             activeGame.saveGameState(game);
             Player player = game.getPlayer();
             presenter.prepareLoadSuccessView(new LoadGameOutputData(game.getDay(), GameState.TOTAL_DAYS,
-                    player.getEnergy(), player.getSanity(), player.getAcademicSurvival(), player.getMoney()));
+                    player.getEnergy(), player.getSanity(), player.getAcademicSurvival(), player.getMoney(), game.getRemainingTimeBlocks(), game.getStatus()));
         } catch (GamePersistenceException e) {
             LOGGER.log(Level.WARNING, "Load failed", e);
             presenter.prepareFailView("Couldn't load your game. Please try again.");

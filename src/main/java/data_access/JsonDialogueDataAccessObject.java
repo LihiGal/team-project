@@ -115,6 +115,7 @@ public class JsonDialogueDataAccessObject implements DialogueDataAccessInterface
 
         Outcome outcome = new Outcome.Builder()
                 .effects(effects)
+                .timeBlocksUsed(1)
                 .message(optionJson.optString("message", ""))
                 .build();
 

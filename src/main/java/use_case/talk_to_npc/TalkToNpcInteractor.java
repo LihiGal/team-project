@@ -7,6 +7,8 @@ import entity.GameStatus;
 import entity.NPC;
 import entity.Player;
 import use_case.GameStateDataAccessInterface;
+import use_case.AutoSave;
+import use_case.GamePersistenceException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,13 +26,20 @@ public class TalkToNpcInteractor implements TalkToNpcInputBoundary {
     private final GameStateDataAccessInterface gameStateDataAccess;
     private final DialogueDataAccessInterface dialogueDataAccess;
     private final TalkToNpcOutputBoundary presenter;
+    private final AutoSave autoSave;
 
     public TalkToNpcInteractor(GameStateDataAccessInterface gameStateDataAccess,
                                DialogueDataAccessInterface dialogueDataAccess,
                                TalkToNpcOutputBoundary presenter) {
+        this(gameStateDataAccess, dialogueDataAccess, presenter, null);
+    }
+
+    public TalkToNpcInteractor(GameStateDataAccessInterface gameStateDataAccess, DialogueDataAccessInterface dialogueDataAccess,
+                               TalkToNpcOutputBoundary presenter, AutoSave autoSave){
         this.gameStateDataAccess = gameStateDataAccess;
         this.dialogueDataAccess = dialogueDataAccess;
         this.presenter = presenter;
+        this.autoSave = autoSave;
     }
 
     @Override
@@ -97,19 +106,40 @@ public class TalkToNpcInteractor implements TalkToNpcInputBoundary {
         }
 
         // This is where the game actually changes.
+        int previousDay = gameState.getDay();
         GameStatus status = gameState.apply(option.getOutcome());
         gameStateDataAccess.saveGameState(gameState);
 
+        boolean dayEnded = gameState.getDay() != previousDay || (previousDay == GameState.TOTAL_DAYS &&
+                status != GameStatus.IN_PROGRESS && gameState.getRemainingTimeBlocks() == 0 &&
+                !gameState.getPlayer().isOutOfStat());
+
+        String autoSaveError = null;
+
+        if (dayEnded && autoSave != null){
+            try {
+                autoSave.save(gameState);
+            } catch (GamePersistenceException e) {
+                autoSaveError = "Autosave failed. Please save manually.";
+            }
+        }
+
         Player player = gameState.getPlayer();
-        boolean gameOver = (status == GameStatus.LOST);
         ChooseOptionOutputData outputData = new ChooseOptionOutputData(
                 option.getOutcome().getMessage(),
                 player.getEnergy(),
                 player.getSanity(),
                 player.getAcademicSurvival(),
                 player.getMoney(),
-                gameOver);
+                gameState.getDay(),
+                gameState.getRemainingTimeBlocks(),
+                gameState.getCurrentLocationId(),
+                status);
         presenter.prepareResultView(outputData);
+
+        if (autoSaveError != null) {
+            presenter.prepareFailView(autoSaveError);
+        }
     }
 
     @Override

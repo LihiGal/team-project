@@ -12,6 +12,12 @@ import interface_adapter.persistence.PersistenceViewModel;
 import interface_adapter.talk_to_npc.DialogueViewModel;
 import interface_adapter.talk_to_npc.TalkToNpcController;
 import interface_adapter.talk_to_npc.TalkToNpcPresenter;
+import interface_adapter.end_day.EndDayController;
+import interface_adapter.end_day.EndDayPresenter;
+import interface_adapter.result.ResultViewModel;
+import use_case.end_day.EndDayInputBoundary;
+import use_case.end_day.EndDayInteractor;
+import use_case.end_day.EndDayOutputBoundary;
 import use_case.GameStateDataAccessInterface;
 import use_case.ManageSavesInteractor;
 import use_case.SaveGameDataAccessInterface;
@@ -24,17 +30,21 @@ import use_case.talk_to_npc.DialogueDataAccessInterface;
 import use_case.talk_to_npc.TalkToNpcInputBoundary;
 import use_case.talk_to_npc.TalkToNpcInteractor;
 import use_case.talk_to_npc.TalkToNpcOutputBoundary;
+import use_case.AutoSave;
 import view.DialogueView;
 import view.GameView;
 import view.SavedGamesDialog;
 import view.StartView;
 import view.ViewManager;
+import view.ResultView;
 
 import java.awt.CardLayout;
 import java.util.function.Supplier;
+import javax.print.attribute.standard.JobMessageFromOperator;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
+import javax.swing.JOptionPane;
 
 /**
  * Wires the app together (Dependency Injection). This is the only class
@@ -58,6 +68,9 @@ public class AppBuilder {
     private StartView startView;
     private DialogueViewModel dialogueViewModel;
     private DialogueView dialogueView;
+    private ResultViewModel resultViewModel;
+    private ResultView resultView;
+    private AutoSave autoSave;
 
     public AppBuilder() {
         cardPanel.setLayout(cardLayout);
@@ -66,6 +79,14 @@ public class AppBuilder {
 
     public AppBuilder addGameView() {
         hudViewModel = new HudViewModel();
+        hudViewModel.addPropertyChangeListener(evt -> {
+            JOptionPane.showMessageDialog(
+                    cardPanel,
+                    (String) evt.getNewValue(),
+                    "Game Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        });
         gameView = new GameView(hudViewModel);
         cardPanel.add(gameView, gameView.getViewName());
         return this;
@@ -91,6 +112,14 @@ public class AppBuilder {
         return this;
     }
 
+    public AppBuilder addResultView(){
+        resultViewModel = new ResultViewModel();
+        resultView = new ResultView(resultViewModel);
+
+        cardPanel.add(resultView, resultView.getViewName());
+        return this;
+    }
+
     /**
      * Adds the Talk to an NPC use case. Requires addGameView() and
      * addDialogueView(), because both screens have buttons that use it.
@@ -99,9 +128,9 @@ public class AppBuilder {
         DialogueDataAccessInterface dialogueDataAccessObject =
                 new JsonDialogueDataAccessObject("dialogues.json");
         TalkToNpcOutputBoundary presenter = new TalkToNpcPresenter(
-                dialogueViewModel, hudViewModel, viewManagerModel, gameView.getViewName());
+                dialogueViewModel, hudViewModel, viewManagerModel, gameView.getViewName(), resultViewModel);
         TalkToNpcInputBoundary interactor = new TalkToNpcInteractor(
-                gameStateDataAccessObject, dialogueDataAccessObject, presenter);
+                gameStateDataAccessObject, dialogueDataAccessObject, presenter, autoSave);
         TalkToNpcController controller = new TalkToNpcController(interactor);
 
         gameView.setTalkToNpcController(controller);
@@ -111,9 +140,10 @@ public class AppBuilder {
 
     /** Requires addGameView() and addNewGameUseCase(). */
     public AppBuilder addPersistenceUseCases(SaveGameDataAccessInterface saves, Supplier<String> username) {
+        this.autoSave = new AutoSave(saves, username);
         PersistenceViewModel feedback = new PersistenceViewModel();
         PersistencePresenter presenter = new PersistencePresenter(
-                feedback, hudViewModel, viewManagerModel, gameView.getViewName());
+                feedback, hudViewModel, viewManagerModel, gameView.getViewName(), resultViewModel);
         PersistenceController controller = new PersistenceController(
                 new SaveGameInteractor(gameStateDataAccessObject, saves, presenter),
                 new LoadGameInteractor(gameStateDataAccessObject, saves, presenter),
@@ -124,10 +154,27 @@ public class AppBuilder {
         return this;
     }
 
+    /**
+     * Adds the End Day use case.
+     * Requires addGameView().
+     */
+    public AppBuilder addEndDayUseCase(){
+        EndDayOutputBoundary presenter = new EndDayPresenter(hudViewModel, resultViewModel, viewManagerModel);
+        EndDayInputBoundary interactor = new EndDayInteractor(gameStateDataAccessObject, presenter, autoSave);
+        EndDayController controller = new EndDayController(interactor);
+        gameView.addEndDay(controller);
+        return this;
+    }
+
     public JFrame build() {
         JFrame application = new JFrame("UofTears: Survive the Semester");
         application.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         application.add(cardPanel);
+
+        resultView.addBackAction(() -> {
+            viewManagerModel.setState(startView.getViewName());
+            viewManagerModel.firePropertyChanged();
+        });
 
         viewManagerModel.setState(startView.getViewName());
         viewManagerModel.firePropertyChanged();

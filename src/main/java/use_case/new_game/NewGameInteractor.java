@@ -31,7 +31,8 @@ public class NewGameInteractor implements NewGameInputBoundary {
                 player.getEnergy(),
                 player.getSanity(),
                 player.getAcademicSurvival(),
-                player.getMoney());
+                player.getMoney(),
+                gameState.getRemainingTimeBlocks());
         presenter.prepareSuccessView(outputData);
     }
 }

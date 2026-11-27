@@ -12,15 +12,17 @@ public class NewGameOutputData {
     private final int sanity;
     private final int academicSurvival;
     private final int money;
+    private final int remainingTimeBlocks;
 
     public NewGameOutputData(int day, int totalDays, int energy, int sanity,
-                             int academicSurvival, int money) {
+                             int academicSurvival, int money, int remainingTimeBlocks) {
         this.day = day;
         this.totalDays = totalDays;
         this.energy = energy;
         this.sanity = sanity;
         this.academicSurvival = academicSurvival;
         this.money = money;
+        this.remainingTimeBlocks = remainingTimeBlocks;
     }
 
     public int getDay() {
@@ -45,5 +47,9 @@ public class NewGameOutputData {
 
     public int getMoney() {
         return money;
+    }
+
+    public int getRemainingTimeBlocks(){
+        return remainingTimeBlocks;
     }
 }

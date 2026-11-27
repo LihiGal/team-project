@@ -4,6 +4,7 @@ import interface_adapter.hud.HudViewModel;
 import interface_adapter.persistence.PersistenceController;
 import interface_adapter.persistence.PersistenceViewModel;
 import interface_adapter.talk_to_npc.TalkToNpcController;
+import interface_adapter.end_day.EndDayController;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -34,6 +35,7 @@ public class GameView extends JPanel {
     private final JPanel footer = new JPanel(new BorderLayout());
     private final JPanel actionPanel = new JPanel(new FlowLayout());
     private final JButton talkButton = new JButton("Talk to the Shawarma Lady");
+    private final JButton endDayButton = new JButton("End Day");
 
     public GameView(HudViewModel hudViewModel) {
         setLayout(new BorderLayout());
@@ -70,6 +72,7 @@ public class GameView extends JPanel {
             talkButton.setEnabled(!state.busy());
             saveButton.setEnabled(!state.busy());
             loadButton.setEnabled(!state.busy());
+            endDayButton.setEnabled(!state.busy());
             message.setText(state.message());
         });
     }
@@ -77,6 +80,11 @@ public class GameView extends JPanel {
     /** Given by AppBuilder once the talk use case has been built. */
     public void setTalkToNpcController(TalkToNpcController talkToNpcController) {
         this.talkToNpcController = talkToNpcController;
+    }
+
+    public void addEndDay(EndDayController controller){
+        endDayButton.addActionListener(e -> controller.execute());
+        actionPanel.add(endDayButton);
     }
 
     public String getViewName() {

@@ -13,6 +13,7 @@ public class HudState {
     private int sanity;
     private int academicSurvival;
     private int money;
+    private int remainingTimeBlocks;
 
     public HudState() {
     }
@@ -25,6 +26,7 @@ public class HudState {
         this.sanity = copy.sanity;
         this.academicSurvival = copy.academicSurvival;
         this.money = copy.money;
+        this.remainingTimeBlocks = copy.remainingTimeBlocks;
     }
 
     public int getDay() {
@@ -73,5 +75,13 @@ public class HudState {
 
     public void setMoney(int money) {
         this.money = money;
+    }
+
+    public int getRemainingTimeBlocks(){
+        return remainingTimeBlocks;
+    }
+
+    public void setRemainingTimeBlocks(int remainingTimeBlocks){
+        this.remainingTimeBlocks = remainingTimeBlocks;
     }
 }

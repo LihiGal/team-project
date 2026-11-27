@@ -30,10 +30,12 @@ public class Main {
             JFrame application = new AppBuilder()
                     .addGameView()
                     .addDialogueView()
+                    .addResultView()
                     .addNewGameUseCase()
-                    .addTalkToNpcUseCase()
                     .addPersistenceUseCases(new SqliteGameDataAccessObject(connections),
                             () -> TEMPORARY_USERNAME)
+                    .addTalkToNpcUseCase()
+                    .addEndDayUseCase()
                     .build();
             application.setSize(480, 360);
             application.setLocationRelativeTo(null);
